@@ -432,17 +432,17 @@ def _render_mermaid_block(mermaid_code: str) -> None:
     """Render mermaid diagram via mermaid.ink API (server-side render → PNG).
     - input  : mermaid_code (string isi diagram, tanpa fence/tag)
     - output : preview fixed-width + expander full-width via st.image
-    - catatan: mermaid.ink di-fetch oleh browser user, tidak ada CSP/iframe issue
+    - catatan: encode raw mermaid code ke base64 (bukan JSON wrapper)
     """
     try:
-        config  = {"code": mermaid_code, "mermaid": {"theme": "dark"}}
-        encoded = base64.urlsafe_b64encode(_json.dumps(config).encode()).decode()
+        # encode mermaid code langsung ke base64 URL-safe
+        encoded = base64.urlsafe_b64encode(mermaid_code.encode()).decode()
         url     = f"https://mermaid.ink/img/{encoded}"
         # preview: fixed width supaya tidak melebar/terlalu panjang
         st.image(url, width=560)
         # expander untuk lihat ukuran penuh
         with st.expander("🔍 Lihat diagram penuh"):
-            st.image(url, width="stretch")
+            st.image(url, use_container_width=True)
     except Exception as e:
         st.code(mermaid_code, language="text")
         st.caption(f"⚠️ Diagram gagal dirender: {e}")
@@ -494,7 +494,7 @@ def _render_sop_with_mermaid(sop_text: str) -> None:
             # skip baris yang cuma image link (![...](url)) - link invalid dari model
             clean = re.sub(r'!\[.*?\]\(.*?\)', '', part).strip()
             if clean:
-                st.code(clean, language="markdown")
+                st.markdown(clean)
 
 
 
