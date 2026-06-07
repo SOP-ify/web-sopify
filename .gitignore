@@ -1,0 +1,15 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.env
+.pytest_cache/
+__pycache__/
+.DS_Store
+.antigravitycli/
+
+# dataset dan notebook — tidak masuk image Docker
+dataset-sop/
+tests/
+*.ipynb
+*.pdf

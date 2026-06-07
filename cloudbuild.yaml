@@ -1,0 +1,75 @@
+# cloudbuild.yaml — web-sopify (Streamlit UI)
+#
+# -> CI/CD pipeline untuk Cloud Run (tanpa GPU)
+#      -> Step 1: build Docker image
+#      -> Step 2: push ke Artifact Registry
+#      -> Step 3: deploy ke Cloud Run asia-southeast1
+#
+# Cara pakai:
+#   gcloud builds submit --config=cloudbuild.yaml
+#   ATAU auto-trigger via Cloud Build trigger dari GitHub
+
+substitutions:
+  _REGION:  asia-southeast1
+  _SERVICE: sopify-web
+  _IMAGE:   asia-southeast1-docker.pkg.dev/$PROJECT_ID/sopify/sopify-web
+
+steps:
+  # step 1: build image Docker
+  - name: gcr.io/cloud-builders/docker
+    id: build
+    args:
+      - build
+      - --tag
+      - $_IMAGE:$SHORT_SHA
+      - --tag
+      - $_IMAGE:latest
+      - --cache-from
+      - $_IMAGE:latest
+      - .
+    timeout: 600s
+
+  # step 2: push image ke Artifact Registry
+  - name: gcr.io/cloud-builders/docker
+    id: push
+    args:
+      - push
+      - --all-tags
+      - $_IMAGE
+    waitFor: [build]
+
+  # step 3: deploy ke Cloud Run (tanpa GPU — Streamlit UI saja)
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    id: deploy
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - $_SERVICE
+      - --image=$_IMAGE:$SHORT_SHA
+      - --region=$_REGION
+      - --memory=512Mi
+      - --cpu=1
+      - --min-instances=0
+      - --max-instances=5
+      - --concurrency=80
+      - --timeout=60
+      - --port=8501
+      - --execution-environment=gen1
+      - --allow-unauthenticated
+      - --update-secrets=API_TOKEN=sopify-web-token:latest
+      - --update-env-vars=API_URL=$_API_URL
+      - --quiet
+    waitFor: [push]
+
+# image yang di-push setelah build
+images:
+  - $_IMAGE:$SHORT_SHA
+  - $_IMAGE:latest
+
+# timeout total build
+timeout: 900s
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: E2_MEDIUM

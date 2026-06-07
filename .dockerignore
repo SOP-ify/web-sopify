@@ -1,0 +1,17 @@
+# .dockerignore — web-sopify
+__pycache__/
+*.py[cod]
+.env
+venv/
+.venv/
+
+# dev files
+tests/
+dataset-sop/
+*.ipynb
+*.pdf
+*.md
+
+# git
+.git/
+.gitignore
